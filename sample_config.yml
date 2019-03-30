@@ -1,0 +1,14 @@
+
+users:
+  -
+      name: UserOne
+      ifttt:
+        event_name: event
+        key: secret_key
+      only_decks: [151512942949, 124151295192]
+  -
+      name: UserTwo
+      ifttt:
+        event_name: event_two
+        key: secret_key_two
+      only_decks: ~
