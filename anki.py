@@ -3,54 +3,46 @@ from sqlite3 import Error
 from datetime import datetime
 import requests
 import random
-import accounts
+from . import accounts
 # randomly select from most recent 50
 limit = 50
 
+class Anki: 
 
-def create_connection(db_file):
-    """ create a database connection to the SQLite database
-        specified by the db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except Error as e:
-        print(e)
+    def __init__(self, db_file):
+        self.conn = self.create_connection(db_file)
 
-    return None
+    def create_connection(self, db_file):
+        """ create a database connection to the SQLite database
+            specified by the db_file
+        :param db_file: database file
+        :return: Connection object or None
+        """
+        try:
+            conn = sqlite3.connect(db_file)
+            return conn
+        except Error as e:
+            print(e)
 
-
-def select_cards(conn, url, only_decks):
-    cur = conn.cursor()
-    query = "SELECT flds, due FROM cards left join notes on cards.nid = notes.id where cards.queue=1"
-    if only_decks is not None:
-        query += " and cards.did in ({})".format(', '.join([str(deck) for deck in only_decks]))
-
-    query += " order by cards.due asc limit {}".format(limit)
-    cur.execute(query)
-
-    rows = cur.fetchall()
-    to_send = random.randint(0, len(rows) - 1)
-    row = rows[to_send]
-    content = filter(lambda x: len(x) > 0, row[0].split('\x1f'))[:10]
-    make_ifttt_request(url, content[0], 'due {}'.format(datetime.fromtimestamp(row[1])), ' '.join(content[1:]))
+        return None
 
 
-def main():
-    # create a database connection
-    for account in accounts.get_users():
-        print(account.collection)
-        conn = create_connection(account.collection)
-        with conn:
-            select_cards(conn, account.url, account.only_decks)
+    def select_cards(self, only_decks, all=False):
+        with self.conn:
+            cur = self.conn.cursor()
+            query = "SELECT flds, due FROM cards left join notes on cards.nid = notes.id where cards.queue=1"
+            if only_decks is not None:
+                query += " and cards.did in ({})".format(', '.join([str(deck) for deck in only_decks]))
 
+            query += " order by cards.due asc limit {}".format(limit)
+            cur.execute(query)
 
-def make_ifttt_request(url_var, param1, param2, param3):
-    requests.post(url_var, {"value1": param1, "value2": param2, "value3": param3})
+            rows = cur.fetchall()
+            if all:
+                return list(map(lambda row: list(filter(lambda x: len(x) > 0, row[0].split('\x1f')))[:10], rows))
+            else:
+                to_send = random.randint(0, len(rows) - 1)
+                row = rows[to_send]
+                content = list(filter(lambda x: len(x) > 0, row[0].split('\x1f')))[:10]
+                return datetime.fromtimestamp(row[1]), content
 
-
-if __name__ == '__main__':
-    main()
