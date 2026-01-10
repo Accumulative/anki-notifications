@@ -1,14 +1,38 @@
+anki:
+  # Path where anki-sync-server stores collections
+  # Default: /etc/anki-sync-server/collections
+  collection_path: /data/collections
 
 users:
-  -
-      name: UserOne
-      ifttt:
-        event_name: event
-        key: secret_key
-      only_decks: [151512942949, 124151295192]
-  -
-      name: UserTwo
-      ifttt:
-        event_name: event_two
-        key: secret_key_two
-      only_decks: ~
+  # Example 1: Home Assistant notifications (recommended for self-hosted)
+  - name: kieran
+    notification:
+      type: homeassistant
+      url: http://192.168.11.35:8123  # Your Home Assistant URL
+      token: your_long_lived_access_token_here
+      service: mobile_app  # or 'notify' for general notifications
+    only_decks: [1515129429, 1241512951]  # Optional: filter by deck IDs
+
+  # Example 2: IFTTT notifications (legacy support)
+  - name: UserTwo
+    notification:
+      type: ifttt
+      event_name: anki_notification
+      key: your_ifttt_webhook_key
+    only_decks: ~  # ~ means null (all decks)
+
+  # Example 3: Ntfy notifications (simple self-hosted push)
+  - name: UserThree
+    notification:
+      type: ntfy
+      url: https://ntfy.sh  # or your self-hosted ntfy instance
+      topic: anki_cards
+      token: optional_token_for_auth  # Optional
+    only_decks: ~
+
+  # Backward compatibility: old IFTTT format still works
+  - name: UserFour
+    ifttt:
+      event_name: anki_card_due
+      key: legacy_ifttt_key
+    only_decks: [1515129429]
